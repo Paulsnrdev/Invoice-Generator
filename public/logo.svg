@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" fill="none">
+  <!-- Dark rounded background -->
+  <rect width="64" height="64" rx="14" fill="#14171f"/>
+  <!-- Document body -->
+  <path d="M18 16h18l10 10v22a2 2 0 0 1-2 2H18a2 2 0 0 1-2-2V18a2 2 0 0 1 2-2z" fill="white" fill-opacity="0.95"/>
+  <!-- Folded corner -->
+  <path d="M36 16l10 10H38a2 2 0 0 1-2-2V16z" fill="#14171f" fill-opacity="0.25"/>
+  <!-- Text lines -->
+  <line x1="22" y1="33" x2="42" y2="33" stroke="#14171f" stroke-width="2.2" stroke-linecap="round"/>
+  <line x1="22" y1="39" x2="42" y2="39" stroke="#14171f" stroke-width="2.2" stroke-linecap="round"/>
+  <line x1="22" y1="45" x2="34" y2="45" stroke="#14171f" stroke-width="2.2" stroke-linecap="round"/>
+</svg>
