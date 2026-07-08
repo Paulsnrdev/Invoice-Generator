@@ -44,16 +44,47 @@ export default function InvoiceEditor({ invoice, onChange, onSave, onNew, onShow
     const html2pdf = (await import('html2pdf.js')).default
     const el = sheetRef.current
     if (!el) return
-    html2pdf()
-      .set({
-        margin: [10, 10, 10, 10],
-        filename: `${invoice.invoiceNumber || 'invoice'}.pdf`,
-        image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
-      })
-      .from(el)
-      .save()
+
+    // html2canvas doesn't render <input>/<textarea> values reliably —
+    // clone the sheet and replace every form element with a plain text node.
+    const clone = el.cloneNode(true)
+
+    clone.querySelectorAll('.no-print').forEach(n => n.remove())
+
+    clone.querySelectorAll('input, textarea').forEach(input => {
+      const isTextarea = input.tagName === 'TEXTAREA'
+      const replacement = document.createElement(isTextarea ? 'div' : 'span')
+      replacement.textContent = input.value
+      // Preserve the visual class so font/size/alignment stays correct
+      replacement.className = input.className
+      replacement.style.cssText = input.style.cssText
+      // Inputs with text-align:right need it on the replacement too
+      const align = window.getComputedStyle(input).textAlign
+      if (align) replacement.style.textAlign = align
+      input.replaceWith(replacement)
+    })
+
+    // Mount off-screen so layout computes correctly
+    clone.style.position = 'fixed'
+    clone.style.top = '-9999px'
+    clone.style.left = '0'
+    clone.style.width = el.offsetWidth + 'px'
+    document.body.appendChild(clone)
+
+    try {
+      await html2pdf()
+        .set({
+          margin: [10, 10, 10, 10],
+          filename: `${invoice.invoiceNumber || 'invoice'}.pdf`,
+          image: { type: 'jpeg', quality: 0.98 },
+          html2canvas: { scale: 2, useCORS: true, logging: false },
+          jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        })
+        .from(clone)
+        .save()
+    } finally {
+      document.body.removeChild(clone)
+    }
   }
 
   const totals = calcTotals(invoice.lineItems, invoice.discountPct, invoice.taxPct)
