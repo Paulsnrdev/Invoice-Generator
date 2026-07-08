@@ -12,10 +12,12 @@ export default function ContactPage() {
   return (
     <div className="min-h-screen bg-[#f7f8fa]">
       {/* Hero */}
-      <div className="bg-white border-b border-[var(--line)] py-16 px-4 text-center">
-        <img src="/logo.svg" alt="Logo" className="w-16 h-16 rounded-2xl mb-4" />
-        <h1 className="text-[32px] font-bold text-[var(--ink)] mb-3 tracking-tight">Contact Us</h1>
-        <p className="text-[var(--muted)] text-[16px] max-w-md mx-auto">
+      <div className="bg-white border-b border-[var(--line)] py-10 px-4 text-center">
+        <div className="flex items-center justify-center gap-3 mb-2">
+          <img src="/logo.svg" alt="Logo" className="w-12 h-12 rounded-2xl" />
+          <h1 className="text-[28px] font-bold text-[var(--ink)] tracking-tight">Contact Us</h1>
+        </div>
+        <p className="text-[var(--muted)] text-[15px] max-w-md mx-auto">
           Have a question, feature request, or feedback? We'd love to hear from you.
         </p>
       </div>
