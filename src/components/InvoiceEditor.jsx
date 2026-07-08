@@ -44,22 +44,23 @@ export default function InvoiceEditor({ invoice, onChange, onSave, onNew, onShow
   const handleDownloadPdf = async () => {
     const html2pdf = (await import('html2pdf.js')).default
 
-    // Build a clean static HTML string — no inputs, no buttons, only data.
-    // This is far more reliable than screenshotting the live React DOM.
-    const htmlString = buildPrintHtml(invoice)
-
+    // buildPrintHtml returns a plain <div> string with only inline styles —
+    // no form elements, no external CSS, no document wrapper.
     const container = document.createElement('div')
-    container.style.cssText = 'position:fixed;top:-9999px;left:0;width:210mm;background:#fff;'
-    container.innerHTML = htmlString
+    container.style.cssText = 'position:fixed;top:-9999px;left:0;width:794px;background:#fff;'
+    container.innerHTML = buildPrintHtml(invoice)
     document.body.appendChild(container)
+
+    // Small delay so any embedded images (logo) finish painting
+    await new Promise(r => setTimeout(r, 150))
 
     try {
       await html2pdf()
         .set({
-          margin: [0, 0, 0, 0],
+          margin: 0,
           filename: `${invoice.invoiceNumber || 'invoice'}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
-          html2canvas: { scale: 2, useCORS: true, logging: false },
+          html2canvas: { scale: 2, useCORS: true, allowTaint: true, logging: false },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         })
         .from(container.firstElementChild)

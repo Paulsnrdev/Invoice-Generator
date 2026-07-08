@@ -1,133 +1,134 @@
 import { formatMoney } from './formatting'
 import { calcTotals } from './calculations'
 
+// Returns a self-contained <div> string (no html/head/body wrapper).
+// All styles are inline so html2canvas can render it without external CSS.
 export function buildPrintHtml(invoice) {
-  const { from, to, lineItems, discountPct, taxPct, currency, invoiceNumber, issueDate, dueDate, bankDetails, notes } = invoice
+  const { from, to, lineItems, discountPct, taxPct, currency,
+          invoiceNumber, issueDate, dueDate, bankDetails, notes } = invoice
   const fmt = v => formatMoney(v, currency)
   const totals = calcTotals(lineItems, discountPct, taxPct)
 
+  const ACCENT  = '#0f766e'
+  const INK     = '#14171f'
+  const MUTED   = '#6b7280'
+  const LINE    = '#e6e7eb'
+  const FONT    = "Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+
   const logoHtml = from.logoBase64
-    ? `<img src="${from.logoBase64}" style="max-height:60px;max-width:160px;object-fit:contain;margin-bottom:10px;display:block;" />`
+    ? `<img src="${from.logoBase64}" style="max-height:56px;max-width:150px;object-fit:contain;display:block;margin-bottom:10px;" />`
     : ''
 
   const fromLines = [from.email, from.phone, from.address, from.taxNumber]
     .filter(Boolean)
-    .map(l => `<div style="color:#6b7280;font-size:13px;line-height:1.6;">${esc(l)}</div>`)
+    .map(l => `<div style="color:${MUTED};font-size:12px;line-height:1.7;">${esc(l)}</div>`)
     .join('')
 
   const itemRows = lineItems.map(item => {
     const qty = parseFloat(item.quantity) || 0
     const rate = parseFloat(item.rate) || 0
-    const amount = qty * rate
-    return `<tr>
-      <td style="padding:10px 8px;border-bottom:1px solid #e6e7eb;font-size:13.5px;font-weight:500;">${esc(item.description)}</td>
-      <td style="padding:10px 8px;border-bottom:1px solid #e6e7eb;text-align:right;font-size:13.5px;font-variant-numeric:tabular-nums;">${qty}</td>
-      <td style="padding:10px 8px;border-bottom:1px solid #e6e7eb;text-align:right;font-size:13.5px;font-variant-numeric:tabular-nums;">${fmt(rate)}</td>
-      <td style="padding:10px 8px;border-bottom:1px solid #e6e7eb;text-align:right;font-size:13.5px;font-weight:600;font-variant-numeric:tabular-nums;white-space:nowrap;">${fmt(amount)}</td>
-    </tr>`
+    return `
+      <tr>
+        <td style="padding:9px 8px;border-bottom:1px solid ${LINE};font-size:13px;font-weight:500;color:${INK};">${esc(item.description)}</td>
+        <td style="padding:9px 8px;border-bottom:1px solid ${LINE};text-align:right;font-size:13px;color:${INK};">${qty}</td>
+        <td style="padding:9px 8px;border-bottom:1px solid ${LINE};text-align:right;font-size:13px;color:${INK};">${fmt(rate)}</td>
+        <td style="padding:9px 8px;border-bottom:1px solid ${LINE};text-align:right;font-size:13px;font-weight:600;color:${INK};white-space:nowrap;">${fmt(qty * rate)}</td>
+      </tr>`
   }).join('')
 
-  const discountRow = totals.discount > 0
-    ? `<tr><td style="${totalLabelStyle}">Discount (${discountPct}%)</td><td style="${totalValueStyle}">–${fmt(totals.discount)}</td></tr>`
-    : `<tr><td style="${totalLabelStyle}">Discount</td><td style="${totalValueStyle}">${fmt(0)}</td></tr>`
-
-  return `<!DOCTYPE html>
-<html lang="en">
-<head>
-<meta charset="UTF-8"/>
-<style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
-  body { font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; color: #14171f; background: #fff; font-size: 14px; line-height: 1.5; -webkit-font-smoothing: antialiased; }
-</style>
-</head>
-<body>
-<div style="max-width:780px;margin:0 auto;padding:48px 52px;background:#fff;">
+  return `
+<div style="font-family:${FONT};color:${INK};background:#fff;padding:48px 52px;max-width:780px;margin:0 auto;">
 
   <!-- Accent bar -->
-  <div style="height:6px;background:#0f766e;margin:-48px -52px 48px;"></div>
+  <div style="height:6px;background:${ACCENT};margin:-48px -52px 44px -52px;"></div>
 
   <!-- Header -->
-  <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:24px;margin-bottom:40px;">
-    <!-- From -->
-    <div style="max-width:300px;">
+  <div style="display:table;width:100%;margin-bottom:38px;">
+    <div style="display:table-cell;vertical-align:top;width:55%;">
       ${logoHtml}
-      <div style="font-size:20px;font-weight:700;letter-spacing:-.015em;margin-bottom:4px;">${esc(from.name)}</div>
+      <div style="font-size:19px;font-weight:700;letter-spacing:-.015em;margin-bottom:4px;">${esc(from.name)}</div>
       ${fromLines}
     </div>
-    <!-- Doc title -->
-    <div style="text-align:right;">
-      <div style="font-size:32px;font-weight:800;letter-spacing:.04em;text-transform:uppercase;margin-bottom:14px;">Invoice</div>
-      <table style="margin-left:auto;font-size:13px;border-spacing:0;">
+    <div style="display:table-cell;vertical-align:top;text-align:right;">
+      <div style="font-size:30px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px;">Invoice</div>
+      <table style="margin-left:auto;border-collapse:collapse;font-size:13px;">
         <tr>
-          <td style="color:#6b7280;padding:3px 12px 3px 0;text-align:right;">Invoice #</td>
-          <td style="font-variant-numeric:tabular-nums;text-align:right;min-width:120px;">${esc(invoiceNumber)}</td>
+          <td style="color:${MUTED};padding:2px 10px 2px 0;text-align:right;">Invoice #</td>
+          <td style="text-align:right;min-width:110px;">${esc(invoiceNumber)}</td>
         </tr>
         <tr>
-          <td style="color:#6b7280;padding:3px 12px 3px 0;text-align:right;">Issue date</td>
-          <td style="font-variant-numeric:tabular-nums;text-align:right;">${esc(issueDate)}</td>
+          <td style="color:${MUTED};padding:2px 10px 2px 0;text-align:right;">Issue date</td>
+          <td style="text-align:right;">${esc(issueDate)}</td>
         </tr>
         <tr>
-          <td style="color:#6b7280;padding:3px 12px 3px 0;text-align:right;">Due date</td>
-          <td style="font-variant-numeric:tabular-nums;text-align:right;">${esc(dueDate)}</td>
+          <td style="color:${MUTED};padding:2px 10px 2px 0;text-align:right;">Due date</td>
+          <td style="text-align:right;">${esc(dueDate)}</td>
         </tr>
       </table>
     </div>
   </div>
 
   <!-- Bill To -->
-  <div style="margin-bottom:32px;">
-    <div style="font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Bill to</div>
-    <div style="font-weight:600;font-size:15px;">${esc(to.name)}</div>
-    ${to.email ? `<div style="color:#6b7280;font-size:13px;">${esc(to.email)}</div>` : ''}
-    ${to.address ? `<div style="color:#6b7280;font-size:13px;">${esc(to.address)}</div>` : ''}
+  <div style="margin-bottom:30px;">
+    <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${MUTED};margin-bottom:5px;">Bill to</div>
+    <div style="font-weight:600;font-size:14px;color:${INK};">${esc(to.name)}</div>
+    ${to.email   ? `<div style="color:${MUTED};font-size:12px;">${esc(to.email)}</div>`   : ''}
+    ${to.address ? `<div style="color:${MUTED};font-size:12px;">${esc(to.address)}</div>` : ''}
   </div>
 
   <!-- Line Items -->
-  <table style="width:100%;border-collapse:collapse;margin-bottom:8px;">
+  <table style="width:100%;border-collapse:collapse;margin-bottom:6px;">
     <thead>
       <tr>
-        <th style="text-align:left;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#6b7280;padding:0 8px 10px;border-bottom:1.5px solid #14171f;width:52%;">Description</th>
-        <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#6b7280;padding:0 8px 10px;border-bottom:1.5px solid #14171f;">Qty</th>
-        <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#6b7280;padding:0 8px 10px;border-bottom:1.5px solid #14171f;">Rate</th>
-        <th style="text-align:right;font-size:11px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;color:#6b7280;padding:0 8px 10px;border-bottom:1.5px solid #14171f;">Amount</th>
+        <th style="text-align:left;font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:${MUTED};padding:0 8px 9px;border-bottom:2px solid ${INK};width:52%;">Description</th>
+        <th style="text-align:right;font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:${MUTED};padding:0 8px 9px;border-bottom:2px solid ${INK};">Qty</th>
+        <th style="text-align:right;font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:${MUTED};padding:0 8px 9px;border-bottom:2px solid ${INK};">Rate</th>
+        <th style="text-align:right;font-size:10px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:${MUTED};padding:0 8px 9px;border-bottom:2px solid ${INK};">Amount</th>
       </tr>
     </thead>
     <tbody>${itemRows}</tbody>
   </table>
 
   <!-- Totals -->
-  <div style="display:flex;justify-content:flex-end;margin-top:8px;">
-    <table style="width:300px;border-spacing:0;">
-      <tr><td style="${totalLabelStyle}">Subtotal</td><td style="${totalValueStyle}">${fmt(totals.subtotal)}</td></tr>
-      ${discountRow}
-      <tr><td style="${totalLabelStyle}">Tax / VAT (${taxPct}%)</td><td style="${totalValueStyle}">${fmt(totals.tax)}</td></tr>
-      <tr>
-        <td style="padding:12px 8px 4px;font-size:18px;font-weight:800;border-top:2px solid #14171f;">Total</td>
-        <td style="padding:12px 8px 4px;font-size:18px;font-weight:800;text-align:right;color:#0f766e;font-variant-numeric:tabular-nums;border-top:2px solid #14171f;">${fmt(totals.grand)}</td>
-      </tr>
-    </table>
+  <div style="display:table;width:100%;margin-top:6px;">
+    <div style="display:table-cell;"></div>
+    <div style="display:table-cell;width:290px;">
+      <table style="width:100%;border-collapse:collapse;font-size:13px;">
+        <tr>
+          <td style="padding:7px 8px;color:${MUTED};">Subtotal</td>
+          <td style="padding:7px 8px;text-align:right;">${fmt(totals.subtotal)}</td>
+        </tr>
+        <tr>
+          <td style="padding:7px 8px;color:${MUTED};">Discount (${discountPct}%)</td>
+          <td style="padding:7px 8px;text-align:right;">${totals.discount > 0 ? '–' + fmt(totals.discount) : fmt(0)}</td>
+        </tr>
+        <tr>
+          <td style="padding:7px 8px;color:${MUTED};">Tax / VAT (${taxPct}%)</td>
+          <td style="padding:7px 8px;text-align:right;">${fmt(totals.tax)}</td>
+        </tr>
+        <tr style="border-top:2px solid ${INK};">
+          <td style="padding:12px 8px 4px;font-size:17px;font-weight:800;">Total</td>
+          <td style="padding:12px 8px 4px;font-size:17px;font-weight:800;text-align:right;color:${ACCENT};">${fmt(totals.grand)}</td>
+        </tr>
+      </table>
+    </div>
   </div>
 
   <!-- Footer -->
-  <div style="margin-top:40px;padding-top:24px;border-top:1px solid #e6e7eb;display:flex;gap:32px;">
-    <div style="flex:1;">
-      <div style="font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Payment details</div>
-      <div style="color:#6b7280;font-size:13px;white-space:pre-wrap;">${esc(bankDetails)}</div>
+  <div style="margin-top:38px;padding-top:22px;border-top:1px solid ${LINE};display:table;width:100%;">
+    <div style="display:table-cell;width:50%;padding-right:20px;vertical-align:top;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${MUTED};margin-bottom:5px;">Payment details</div>
+      <div style="color:${MUTED};font-size:12px;line-height:1.7;white-space:pre-wrap;">${esc(bankDetails)}</div>
     </div>
-    <div style="flex:1;">
-      <div style="font-size:11px;font-weight:600;letter-spacing:.09em;text-transform:uppercase;color:#6b7280;margin-bottom:6px;">Notes / terms</div>
-      <div style="color:#6b7280;font-size:13px;white-space:pre-wrap;">${esc(notes)}</div>
+    <div style="display:table-cell;width:50%;padding-left:20px;vertical-align:top;">
+      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${MUTED};margin-bottom:5px;">Notes / terms</div>
+      <div style="color:${MUTED};font-size:12px;line-height:1.7;white-space:pre-wrap;">${esc(notes)}</div>
     </div>
   </div>
 
-  <div style="text-align:center;margin-top:40px;color:#6b7280;font-size:13px;letter-spacing:.02em;">Thank you!</div>
-</div>
-</body>
-</html>`
+  <div style="text-align:center;margin-top:36px;color:${MUTED};font-size:12px;letter-spacing:.02em;">Thank you!</div>
+</div>`
 }
-
-const totalLabelStyle = 'padding:8px 8px;color:#6b7280;font-size:13.5px;font-variant-numeric:tabular-nums;'
-const totalValueStyle = 'padding:8px 8px;text-align:right;font-size:13.5px;font-variant-numeric:tabular-nums;'
 
 function esc(str) {
   return String(str ?? '')
