@@ -57,7 +57,7 @@ export default function LineItemsTable({ lineItems, currency, errors, onChange }
                   <input
                     className={`edit font-medium ${descErr ? 'border-[var(--danger)]' : ''}`}
                     value={item.description}
-                    placeholder="Item or service"
+                    placeholder="Describe the item or service"
                     onChange={e => updateItem(item.id, 'description', e.target.value)}
                   />
                 </td>
@@ -66,6 +66,7 @@ export default function LineItemsTable({ lineItems, currency, errors, onChange }
                   <input
                     className={`edit text-right ${qtyErr ? 'border-[var(--danger)]' : ''}`}
                     value={item.quantity}
+                    placeholder="1"
                     inputMode="decimal"
                     onChange={e => updateItem(item.id, 'quantity', e.target.value)}
                   />
@@ -74,6 +75,7 @@ export default function LineItemsTable({ lineItems, currency, errors, onChange }
                   <input
                     className="edit text-right"
                     value={item.rate}
+                    placeholder="0.00"
                     inputMode="decimal"
                     onChange={e => updateItem(item.id, 'rate', e.target.value)}
                   />

@@ -48,12 +48,12 @@ const InvoiceSheet = forwardRef(function InvoiceSheet({ invoice, totals, errors,
             </div>
 
             <div className="text-[20px] font-bold tracking-tight mb-1">
-              <input className="edit w-full font-bold text-[20px]" value={from.name} placeholder="Your Name / Business"
+              <input className="edit w-full font-bold text-[20px]" value={from.name} placeholder="Business / Your Name"
                 onChange={e => onSetField('from.name', e.target.value)} />
             </div>
             {[
-              { key: 'from.email', val: from.email, ph: 'you@email.com' },
-              { key: 'from.phone', val: from.phone, ph: '+234 800 000 0000' },
+              { key: 'from.email', val: from.email, ph: 'Email address' },
+              { key: 'from.phone', val: from.phone, ph: 'Phone number' },
               { key: 'from.address', val: from.address, ph: 'City, Country' },
               { key: 'from.taxNumber', val: from.taxNumber, ph: 'RC / Tax ID (optional)' },
             ].map(({ key, val, ph }) => (
@@ -87,12 +87,12 @@ const InvoiceSheet = forwardRef(function InvoiceSheet({ invoice, totals, errors,
           <span className="block text-[11px] font-semibold tracking-[.09em] uppercase text-[var(--muted)] mb-1.5">Bill to</span>
           {errors['to.name'] && <p className="text-[var(--danger)] text-xs mb-1">{errors['to.name']}</p>}
           <input className={`edit font-semibold text-[15.5px] ${errors['to.name'] ? 'border-[var(--danger)]' : ''}`}
-            value={to.name} placeholder="Client name / Company *"
+            value={to.name} placeholder="Client or company name"
             onChange={e => onSetField('to.name', e.target.value)} />
           <div className="text-[13.5px] text-[var(--muted)]">
-            <input className="edit" value={to.email} placeholder="client@email.com"
+            <input className="edit" value={to.email} placeholder="Client email address"
               onChange={e => onSetField('to.email', e.target.value)} />
-            <input className="edit" value={to.address} placeholder="Client address"
+            <input className="edit" value={to.address} placeholder="Client address / location"
               onChange={e => onSetField('to.address', e.target.value)} />
           </div>
         </div>
