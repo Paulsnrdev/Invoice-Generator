@@ -3,30 +3,53 @@ import { calcTotals } from './calculations'
 
 // Returns a self-contained <div> string (no html/head/body wrapper).
 // All styles are inline so html2canvas can render it without external CSS.
-export function buildPrintHtml(invoice) {
-  const { from, to, lineItems, discountPct, taxPct, currency,
-          invoiceNumber, issueDate, dueDate, bankDetails, notes } = invoice
-  const fmt = v => formatMoney(v, currency)
+export function buildPrintHtml(invoice, docConfig = {}) {
+  const {
+    from, to, lineItems, discountPct, taxPct, currency,
+    invoiceNumber, issueDate, dueDate, bankDetails, notes,
+    paymentTerms, paymentMethods, lateFeePolicy, disputeResolution,
+  } = invoice
+
+  const {
+    docTitle          = 'Invoice',
+    numberLabel       = 'Invoice #',
+    dueDateLabel      = 'Due date',
+    billToLabel       = 'Bill to',
+    paymentTermsLabel = 'Payment Terms',
+  } = docConfig
+
+  const fmt    = v => formatMoney(v, currency)
   const totals = calcTotals(lineItems, discountPct, taxPct)
 
-  const ACCENT  = '#0f766e'
-  const INK     = '#14171f'
-  const MUTED   = '#6b7280'
-  const LINE    = '#e6e7eb'
-  const FONT    = "Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
+  const ACCENT = '#0f766e'
+  const INK    = '#14171f'
+  const MUTED  = '#6b7280'
+  const LINE   = '#e6e7eb'
+  const FONT   = "Arial, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
 
   const logoHtml = from.logoBase64
     ? `<img src="${from.logoBase64}" style="max-height:56px;max-width:150px;object-fit:contain;display:block;margin-bottom:10px;" />`
     : ''
 
-  const fromLines = [from.email, from.phone, from.address, from.taxNumber]
+  const fromLines = [
+    from.email,
+    from.phone,
+    from.address,
+    from.taxNumber,
+    from.businessLicense,
+    from.website,
+  ].filter(Boolean)
+   .map(l => `<div style="color:${MUTED};font-size:12px;line-height:1.7;">${esc(l)}</div>`)
+   .join('')
+
+  const toLines = [to.email, to.address, to.phone, to.taxId]
     .filter(Boolean)
-    .map(l => `<div style="color:${MUTED};font-size:12px;line-height:1.7;">${esc(l)}</div>`)
+    .map(l => `<div style="color:${MUTED};font-size:12px;">${esc(l)}</div>`)
     .join('')
 
   const itemRows = lineItems.map(item => {
-    const qty = parseFloat(item.quantity) || 0
-    const rate = parseFloat(item.rate) || 0
+    const qty  = parseFloat(item.quantity) || 0
+    const rate = parseFloat(item.rate)     || 0
     return `
       <tr>
         <td style="padding:9px 8px;border-bottom:1px solid ${LINE};font-size:13px;font-weight:500;color:${INK};">${esc(item.description)}</td>
@@ -35,6 +58,14 @@ export function buildPrintHtml(invoice) {
         <td style="padding:9px 8px;border-bottom:1px solid ${LINE};text-align:right;font-size:13px;font-weight:600;color:${INK};white-space:nowrap;">${fmt(qty * rate)}</td>
       </tr>`
   }).join('')
+
+  const footerSection = (heading, content) =>
+    content
+      ? `<div style="margin-bottom:18px;">
+           <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${MUTED};margin-bottom:5px;">${heading}</div>
+           <div style="color:${MUTED};font-size:12px;line-height:1.7;white-space:pre-wrap;">${esc(content)}</div>
+         </div>`
+      : ''
 
   return `
 <div style="font-family:${FONT};color:${INK};background:#fff;padding:48px 52px;max-width:780px;margin:0 auto;">
@@ -50,10 +81,10 @@ export function buildPrintHtml(invoice) {
       ${fromLines}
     </div>
     <div style="display:table-cell;vertical-align:top;text-align:right;">
-      <div style="font-size:30px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px;">Invoice</div>
+      <div style="font-size:30px;font-weight:800;letter-spacing:.06em;text-transform:uppercase;margin-bottom:14px;">${esc(docTitle)}</div>
       <table style="margin-left:auto;border-collapse:collapse;font-size:13px;">
         <tr>
-          <td style="color:${MUTED};padding:2px 10px 2px 0;text-align:right;">Invoice #</td>
+          <td style="color:${MUTED};padding:2px 10px 2px 0;text-align:right;">${esc(numberLabel)}</td>
           <td style="text-align:right;min-width:110px;">${esc(invoiceNumber)}</td>
         </tr>
         <tr>
@@ -61,7 +92,7 @@ export function buildPrintHtml(invoice) {
           <td style="text-align:right;">${esc(issueDate)}</td>
         </tr>
         <tr>
-          <td style="color:${MUTED};padding:2px 10px 2px 0;text-align:right;">Due date</td>
+          <td style="color:${MUTED};padding:2px 10px 2px 0;text-align:right;">${esc(dueDateLabel)}</td>
           <td style="text-align:right;">${esc(dueDate)}</td>
         </tr>
       </table>
@@ -70,10 +101,9 @@ export function buildPrintHtml(invoice) {
 
   <!-- Bill To -->
   <div style="margin-bottom:30px;">
-    <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${MUTED};margin-bottom:5px;">Bill to</div>
+    <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${MUTED};margin-bottom:5px;">${esc(billToLabel)}</div>
     <div style="font-weight:600;font-size:14px;color:${INK};">${esc(to.name)}</div>
-    ${to.email   ? `<div style="color:${MUTED};font-size:12px;">${esc(to.email)}</div>`   : ''}
-    ${to.address ? `<div style="color:${MUTED};font-size:12px;">${esc(to.address)}</div>` : ''}
+    ${toLines}
   </div>
 
   <!-- Line Items -->
@@ -98,10 +128,10 @@ export function buildPrintHtml(invoice) {
           <td style="padding:7px 8px;color:${MUTED};">Subtotal</td>
           <td style="padding:7px 8px;text-align:right;">${fmt(totals.subtotal)}</td>
         </tr>
-        <tr>
+        ${discountPct > 0 ? `<tr>
           <td style="padding:7px 8px;color:${MUTED};">Discount (${discountPct}%)</td>
-          <td style="padding:7px 8px;text-align:right;">${totals.discount > 0 ? '–' + fmt(totals.discount) : fmt(0)}</td>
-        </tr>
+          <td style="padding:7px 8px;text-align:right;">–${fmt(totals.discount)}</td>
+        </tr>` : ''}
         <tr>
           <td style="padding:7px 8px;color:${MUTED};">Tax / VAT (${taxPct}%)</td>
           <td style="padding:7px 8px;text-align:right;">${fmt(totals.tax)}</td>
@@ -115,15 +145,13 @@ export function buildPrintHtml(invoice) {
   </div>
 
   <!-- Footer -->
-  <div style="margin-top:38px;padding-top:22px;border-top:1px solid ${LINE};display:table;width:100%;">
-    <div style="display:table-cell;width:50%;padding-right:20px;vertical-align:top;">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${MUTED};margin-bottom:5px;">Payment details</div>
-      <div style="color:${MUTED};font-size:12px;line-height:1.7;white-space:pre-wrap;">${esc(bankDetails)}</div>
-    </div>
-    <div style="display:table-cell;width:50%;padding-left:20px;vertical-align:top;">
-      <div style="font-size:10px;font-weight:700;letter-spacing:.1em;text-transform:uppercase;color:${MUTED};margin-bottom:5px;">Notes / terms</div>
-      <div style="color:${MUTED};font-size:12px;line-height:1.7;white-space:pre-wrap;">${esc(notes)}</div>
-    </div>
+  <div style="margin-top:38px;padding-top:22px;border-top:1px solid ${LINE};">
+    ${footerSection('Payment Details', bankDetails)}
+    ${footerSection(paymentTermsLabel, paymentTerms)}
+    ${footerSection('Notes', notes)}
+    ${footerSection('Accepted Payment Methods', paymentMethods)}
+    ${footerSection('Late Fee Policy', lateFeePolicy)}
+    ${footerSection('Dispute Resolution', disputeResolution)}
   </div>
 
   <div style="text-align:center;margin-top:36px;color:${MUTED};font-size:12px;letter-spacing:.02em;">Thank you!</div>

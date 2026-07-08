@@ -3,9 +3,10 @@ import { v4 as uuidv4 } from 'uuid'
 import { formatMoney } from '../utils/formatting'
 import LineItemsTable from './LineItemsTable'
 
-const InvoiceSheet = forwardRef(function InvoiceSheet({ invoice, totals, errors, onChange, onSetField }, ref) {
+const InvoiceSheet = forwardRef(function InvoiceSheet({ invoice, totals, errors, onChange, onSetField, docConfig }, ref) {
   const { from, to, lineItems, discountPct, taxPct, currency } = invoice
   const fmt = v => formatMoney(v, currency)
+  const { docTitle = 'Invoice', numberLabel = 'Invoice #', dueDateLabel = 'Due date', billToLabel = 'Bill to' } = docConfig || {}
 
   const handleLogoUpload = (e) => {
     const file = e.target.files[0]
@@ -65,9 +66,9 @@ const InvoiceSheet = forwardRef(function InvoiceSheet({ invoice, totals, errors,
 
           {/* Doc title + meta */}
           <div className="text-right max-sm:text-left">
-            <h1 className="text-[34px] font-extrabold tracking-widest uppercase text-[var(--ink)] mb-3.5">Invoice</h1>
+            <h1 className="text-[34px] font-extrabold tracking-widest uppercase text-[var(--ink)] mb-3.5">{docTitle}</h1>
             <div className="grid grid-cols-[auto_auto] gap-x-4 gap-y-1.5 text-[13.5px] justify-end max-sm:justify-start">
-              <span className="text-[var(--muted)] self-center text-right">Invoice #</span>
+              <span className="text-[var(--muted)] self-center text-right">{numberLabel}</span>
               <input className="edit text-right font-[tabular-nums] min-w-[130px]"
                 value={invoice.invoiceNumber} onChange={e => onSetField('invoiceNumber', e.target.value)} />
 
@@ -75,7 +76,7 @@ const InvoiceSheet = forwardRef(function InvoiceSheet({ invoice, totals, errors,
               <input type="date" className="edit text-right font-[tabular-nums]"
                 value={invoice.issueDate} onChange={e => onSetField('issueDate', e.target.value)} />
 
-              <span className="text-[var(--muted)] self-center text-right">Due date</span>
+              <span className="text-[var(--muted)] self-center text-right">{dueDateLabel}</span>
               <input type="date" className="edit text-right font-[tabular-nums]"
                 value={invoice.dueDate} onChange={e => onSetField('dueDate', e.target.value)} />
             </div>
@@ -84,7 +85,7 @@ const InvoiceSheet = forwardRef(function InvoiceSheet({ invoice, totals, errors,
 
         {/* ── Bill To ── */}
         <div className="mb-8">
-          <span className="block text-[11px] font-semibold tracking-[.09em] uppercase text-[var(--muted)] mb-1.5">Bill to</span>
+          <span className="block text-[11px] font-semibold tracking-[.09em] uppercase text-[var(--muted)] mb-1.5">{billToLabel}</span>
           {errors['to.name'] && <p className="text-[var(--danger)] text-xs mb-1">{errors['to.name']}</p>}
           <input className={`edit font-semibold text-[15.5px] ${errors['to.name'] ? 'border-[var(--danger)]' : ''}`}
             value={to.name} placeholder="Client or company name"
@@ -126,20 +127,37 @@ const InvoiceSheet = forwardRef(function InvoiceSheet({ invoice, totals, errors,
         </div>
 
         {/* ── Footer ── */}
-        <div className="mt-11 pt-6 border-t border-[var(--line)] grid grid-cols-2 gap-8 max-sm:grid-cols-1">
-          <div>
-            <span className="block text-[11px] font-semibold tracking-[.09em] uppercase text-[var(--muted)] mb-1.5">Payment details</span>
-            <textarea className="edit text-[13.5px] text-[var(--muted)] w-full" rows={4}
-              value={invoice.bankDetails} placeholder="Bank name, account name, account number…"
-              onChange={e => onSetField('bankDetails', e.target.value)} />
+        {docConfig?.docTitle === 'Quote' ? (
+          <div className="mt-11 pt-6 border-t border-[var(--line)] grid grid-cols-2 gap-8 max-sm:grid-cols-1">
+            <div>
+              <span className="block text-[11px] font-semibold tracking-[.09em] uppercase text-[var(--muted)] mb-1.5">Notes</span>
+              <textarea className="edit text-[13.5px] text-[var(--muted)] w-full" rows={4}
+                value={invoice.notes || ''}
+                onChange={e => onSetField('notes', e.target.value)} />
+            </div>
+            <div>
+              <span className="block text-[11px] font-semibold tracking-[.09em] uppercase text-[var(--muted)] mb-1.5">Terms & Conditions</span>
+              <textarea className="edit text-[13.5px] text-[var(--muted)] w-full" rows={4}
+                value={invoice.paymentTerms || ''}
+                onChange={e => onSetField('paymentTerms', e.target.value)} />
+            </div>
           </div>
-          <div>
-            <span className="block text-[11px] font-semibold tracking-[.09em] uppercase text-[var(--muted)] mb-1.5">Notes / terms</span>
-            <textarea className="edit text-[13.5px] text-[var(--muted)] w-full" rows={4}
-              value={invoice.notes}
-              onChange={e => onSetField('notes', e.target.value)} />
+        ) : (
+          <div className="mt-11 pt-6 border-t border-[var(--line)] grid grid-cols-2 gap-8 max-sm:grid-cols-1">
+            <div>
+              <span className="block text-[11px] font-semibold tracking-[.09em] uppercase text-[var(--muted)] mb-1.5">Payment details</span>
+              <textarea className="edit text-[13.5px] text-[var(--muted)] w-full" rows={4}
+                value={invoice.bankDetails} placeholder="Bank name, account name, account number…"
+                onChange={e => onSetField('bankDetails', e.target.value)} />
+            </div>
+            <div>
+              <span className="block text-[11px] font-semibold tracking-[.09em] uppercase text-[var(--muted)] mb-1.5">Notes / terms</span>
+              <textarea className="edit text-[13.5px] text-[var(--muted)] w-full" rows={4}
+                value={invoice.notes}
+                onChange={e => onSetField('notes', e.target.value)} />
+            </div>
           </div>
-        </div>
+        )}
 
         <p className="text-center text-[13px] text-[var(--muted)] tracking-wide mt-10">Thank you!</p>
       </div>
