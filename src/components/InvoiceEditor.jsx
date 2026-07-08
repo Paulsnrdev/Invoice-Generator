@@ -1,6 +1,7 @@
 import { useRef, useState, useCallback } from 'react'
 import { CURRENCIES } from '../utils/formatting'
 import { calcTotals } from '../utils/calculations'
+import { buildPrintHtml } from '../utils/buildPrintHtml'
 import InvoiceSheet from './InvoiceSheet'
 import Toolbar from './Toolbar'
 
@@ -42,48 +43,29 @@ export default function InvoiceEditor({ invoice, onChange, onSave, onNew, onShow
 
   const handleDownloadPdf = async () => {
     const html2pdf = (await import('html2pdf.js')).default
-    const el = sheetRef.current
-    if (!el) return
 
-    // html2canvas doesn't render <input>/<textarea> values reliably —
-    // clone the sheet and replace every form element with a plain text node.
-    const clone = el.cloneNode(true)
+    // Build a clean static HTML string — no inputs, no buttons, only data.
+    // This is far more reliable than screenshotting the live React DOM.
+    const htmlString = buildPrintHtml(invoice)
 
-    clone.querySelectorAll('.no-print').forEach(n => n.remove())
-
-    clone.querySelectorAll('input, textarea').forEach(input => {
-      const isTextarea = input.tagName === 'TEXTAREA'
-      const replacement = document.createElement(isTextarea ? 'div' : 'span')
-      replacement.textContent = input.value
-      // Preserve the visual class so font/size/alignment stays correct
-      replacement.className = input.className
-      replacement.style.cssText = input.style.cssText
-      // Inputs with text-align:right need it on the replacement too
-      const align = window.getComputedStyle(input).textAlign
-      if (align) replacement.style.textAlign = align
-      input.replaceWith(replacement)
-    })
-
-    // Mount off-screen so layout computes correctly
-    clone.style.position = 'fixed'
-    clone.style.top = '-9999px'
-    clone.style.left = '0'
-    clone.style.width = el.offsetWidth + 'px'
-    document.body.appendChild(clone)
+    const container = document.createElement('div')
+    container.style.cssText = 'position:fixed;top:-9999px;left:0;width:210mm;background:#fff;'
+    container.innerHTML = htmlString
+    document.body.appendChild(container)
 
     try {
       await html2pdf()
         .set({
-          margin: [10, 10, 10, 10],
+          margin: [0, 0, 0, 0],
           filename: `${invoice.invoiceNumber || 'invoice'}.pdf`,
           image: { type: 'jpeg', quality: 0.98 },
           html2canvas: { scale: 2, useCORS: true, logging: false },
           jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
         })
-        .from(clone)
+        .from(container.firstElementChild)
         .save()
     } finally {
-      document.body.removeChild(clone)
+      document.body.removeChild(container)
     }
   }
 
